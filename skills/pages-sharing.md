@@ -14,16 +14,19 @@ Publish static HTML pages with optional password protection.
 pst start
 
 # Publish a page (public by default)
-pst add ./report.html
+pst add ./report.html --desc "Weekly report"
 # → http://192.168.1.50:8080/p/abc123
 
 # Publish with password
-pst add ./secret.html --password
+pst add ./secret.html --password --desc "Confidential"
 # → http://192.168.1.50:8080/p/def456
 # → Password: xK9mP2
 
-# Check status
-pst status
+# List pages from current directory
+pst list
+
+# List all pages
+pst list --all
 
 # Remove when done
 pst remove abc123
@@ -38,16 +41,18 @@ pst stop
 |---------|-------------|
 | `pst start [--port N]` | Start server (default: 8080) |
 | `pst stop` | Stop server |
-| `pst status` | Show server URL and published pages |
+| `pst status` | Show server URL and all pages |
 | `pst add <path>` | Publish file/folder (public by default) |
-| `pst list` | List all published pages with URLs |
+| `pst list` | List pages from current directory |
+| `pst list --all` | List all pages |
 | `pst remove <id>` | Remove published page |
 
 ## Flags for `pst add`
 
-- `--password` — protect with auto-generated password
+- `--desc "text"` / `-d "text"` — description (saved in config)
+- `--password` / `-p` — protect with auto-generated password
 - `--password <pass>` — protect with custom password
-- (no flag) — public access
+- (no flags) — public access
 
 ## Flags for `pst start`
 
@@ -57,24 +62,39 @@ pst stop
 ## Examples
 
 ```bash
-# Public page (default)
-pst add ./report.html
+# Public page with description
+pst add ./report.html --desc "Q1 Report"
 
 # Auto-generated password
-pst add ./secret.html --password
+pst add ./secret.html --password --desc "Internal docs"
 
 # Custom password
 pst add ./secret.html --password mysecret
 
 # Publish folder (serves index.html)
-pst add ./dist/
+pst add ./dist/ --desc "Build output"
 
 # Start on different port
 pst start --port 9000
 ```
 
+## Important: HTML with Assets
+
+If your HTML references relative paths (`./assets/`, `./css/`, `./js/`), **publish the directory, not the file**:
+
+```bash
+# ❌ Wrong — CSS/JS won't load
+pst add ./index.html
+
+# ✅ Correct — serves index.html with all assets
+pst add ./project-folder/
+```
+
+Single HTML files only work for standalone pages with inline styles or external CDN links.
+
 ## Tips
 
+- `pst list` filters by current directory — use in project folder to see only that project's pages
 - Server auto-detects external IP for shareable URLs
 - Page IDs support partial matching: `pst remove abc` works for `abc123`
 - Files are served from original location — updates appear immediately
