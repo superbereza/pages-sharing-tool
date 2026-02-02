@@ -143,16 +143,13 @@ def cmd_add(args: argparse.Namespace) -> int:
 
     page_id = generate_page_id()
 
-    # Handle password
-    if args.no_password:
-        password = None
-        password_hash = ""
-    elif args.password:
-        password = args.password
+    # Handle password (default: no password)
+    if args.password:
+        password = args.password if args.password is not True else generate_password()
         password_hash = hash_password(password)
     else:
-        password = generate_password()
-        password_hash = hash_password(password)
+        password = None
+        password_hash = ""
 
     storage.add_page(page_id, source, password_hash)
 
@@ -222,8 +219,8 @@ def main() -> None:
     # add
     p_add = subparsers.add_parser("add", help="Publish a file or folder")
     p_add.add_argument("path", help="File or folder to publish")
-    p_add.add_argument("--password", help="Custom password")
-    p_add.add_argument("--no-password", action="store_true", help="No password (public)")
+    p_add.add_argument("--password", "-p", nargs="?", const=True, default=None,
+                       help="Protect with password (auto-generate if no value given)")
     p_add.set_defaults(func=cmd_add)
 
     # list
