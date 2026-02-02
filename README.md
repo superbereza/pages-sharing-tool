@@ -13,14 +13,16 @@ Running `python -m http.server` exposes your entire directory. This tool:
 ## Install
 
 ```bash
-pip install pages-sharing-tool
-```
-
-Or from source:
-```bash
 git clone https://github.com/superbereza/pages-sharing-tool
 cd pages-sharing-tool
-pip install -e .
+./install.sh
+```
+
+This creates an isolated venv and symlinks `pst` to `~/.local/bin/`.
+
+To uninstall:
+```bash
+./uninstall.sh
 ```
 
 ## Usage
