@@ -1,0 +1,145 @@
+"""Storage management for pst."""
+
+import json
+from datetime import datetime, UTC
+from pathlib import Path
+from typing import TypedDict
+
+
+class PageInfo(TypedDict):
+    source: str
+    is_dir: bool
+    password_hash: str  # Empty string if no password
+    created_at: str
+
+
+PST_DIR = Path.home() / ".pst"
+PAGES_FILE = PST_DIR / "pages.json"
+PID_FILE = PST_DIR / "server.pid"
+PORT_FILE = PST_DIR / "port"
+HOST_FILE = PST_DIR / "host"
+
+
+def ensure_dir() -> None:
+    """Ensure ~/.pst directory exists."""
+    PST_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def load_pages() -> dict[str, PageInfo]:
+    """Load pages registry."""
+    if not PAGES_FILE.exists():
+        return {}
+    try:
+        return json.loads(PAGES_FILE.read_text())
+    except Exception:
+        return {}
+
+
+def save_pages(pages: dict[str, PageInfo]) -> None:
+    """Save pages registry."""
+    ensure_dir()
+    PAGES_FILE.write_text(json.dumps(pages, indent=2))
+
+
+def add_page(page_id: str, source: Path, password_hash: str) -> None:
+    """Add a page to registry."""
+    pages = load_pages()
+    pages[page_id] = {
+        "source": str(source.resolve()),
+        "is_dir": source.is_dir(),
+        "password_hash": password_hash,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    save_pages(pages)
+
+
+def remove_page(page_id: str) -> bool:
+    """Remove a page from registry. Returns True if found."""
+    pages = load_pages()
+    if page_id in pages:
+        del pages[page_id]
+        save_pages(pages)
+        return True
+    # Try partial match
+    matches = [k for k in pages if k.startswith(page_id)]
+    if len(matches) == 1:
+        del pages[matches[0]]
+        save_pages(pages)
+        return True
+    return False
+
+
+def get_page(page_id: str) -> PageInfo | None:
+    """Get page by ID (supports partial match)."""
+    pages = load_pages()
+    if page_id in pages:
+        return pages[page_id]
+    # Try partial match
+    matches = [k for k in pages if k.startswith(page_id)]
+    if len(matches) == 1:
+        return pages[matches[0]]
+    return None
+
+
+def get_full_page_id(partial_id: str) -> str | None:
+    """Get full page ID from partial match."""
+    pages = load_pages()
+    if partial_id in pages:
+        return partial_id
+    matches = [k for k in pages if k.startswith(partial_id)]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
+# Server state
+
+def save_pid(pid: int) -> None:
+    """Save server PID."""
+    ensure_dir()
+    PID_FILE.write_text(str(pid))
+
+
+def load_pid() -> int | None:
+    """Load server PID."""
+    if not PID_FILE.exists():
+        return None
+    try:
+        return int(PID_FILE.read_text().strip())
+    except Exception:
+        return None
+
+
+def clear_pid() -> None:
+    """Clear server PID."""
+    if PID_FILE.exists():
+        PID_FILE.unlink()
+
+
+def save_port(port: int) -> None:
+    """Save server port."""
+    ensure_dir()
+    PORT_FILE.write_text(str(port))
+
+
+def load_port() -> int | None:
+    """Load server port."""
+    if not PORT_FILE.exists():
+        return None
+    try:
+        return int(PORT_FILE.read_text().strip())
+    except Exception:
+        return None
+
+
+def save_host(host: str) -> None:
+    """Save configured host."""
+    ensure_dir()
+    HOST_FILE.write_text(host)
+
+
+def load_host() -> str | None:
+    """Load configured host."""
+    if not HOST_FILE.exists():
+        return None
+    return HOST_FILE.read_text().strip() or None

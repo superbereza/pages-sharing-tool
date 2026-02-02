@@ -1,0 +1,70 @@
+# Pages Sharing Tool
+
+Securely publish static pages with password protection. Built for AI agents.
+
+## Why?
+
+Running `python -m http.server` exposes your entire directory. This tool:
+- Publishes only specific files/folders
+- Password-protects each publication
+- Returns ready-to-share URLs with your server's IP
+- Prevents directory traversal attacks
+
+## Install
+
+```bash
+pip install pages-sharing-tool
+```
+
+Or from source:
+```bash
+git clone https://github.com/superbereza/pages-sharing-tool
+cd pages-sharing-tool
+pip install -e .
+```
+
+## Usage
+
+```bash
+# Start server
+pst start
+
+# Publish a file
+pst add ./report.html
+# → http://192.168.1.50:8080/p/abc123
+# → Password: xK9mP2
+
+# Publish a folder
+pst add ./dist/
+
+# List published pages
+pst list
+
+# Remove a page
+pst remove abc123
+
+# Stop server
+pst stop
+```
+
+## For AI Agents
+
+Add to your `CLAUDE.md`:
+
+```
+This project uses `pst` for secure page sharing. Run `pst --help` for usage.
+```
+
+Or install the skill from `skills/pages-sharing.md`.
+
+## Security
+
+- Path traversal protection via strict path validation
+- Password hashing with SHA-256
+- Rate limiting (3 attempts/min/IP)
+- No directory listing
+- Symlink escape prevention
+
+## License
+
+MIT
