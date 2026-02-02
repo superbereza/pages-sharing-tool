@@ -151,7 +151,7 @@ def cmd_add(args: argparse.Namespace) -> int:
         password = None
         password_hash = ""
 
-    storage.add_page(page_id, source, password_hash)
+    storage.add_page(page_id, source, password_hash, args.desc or "")
 
     # Get URL
     port = storage.load_port() or 8080
@@ -197,7 +197,10 @@ def cmd_list(args: argparse.Namespace) -> int:
     for page_id, info in pages.items():
         url = f"http://{host}:{port}/p/{page_id}/"
         lock = "" if info["password_hash"] else " (public)"
+        desc = info.get("description", "")
         print(f"{url}{lock}")
+        if desc:
+            print(f"  {desc}")
         print(f"  Source: {info['source']}")
 
     return 0
@@ -240,6 +243,7 @@ def main() -> None:
     p_add.add_argument("path", help="File or folder to publish")
     p_add.add_argument("--password", "-p", nargs="?", const=True, default=None,
                        help="Protect with password (auto-generate if no value given)")
+    p_add.add_argument("--desc", "-d", help="Description for this page")
     p_add.set_defaults(func=cmd_add)
 
     # list
