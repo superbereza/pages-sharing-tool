@@ -80,10 +80,48 @@ def detect_ip(host_override: str | None = None) -> str:
     return get_local_ip()
 
 
+# Sensitive file patterns that should never be served
+BLOCKED_PATTERNS = [
+    ".env",           # .env, .env.local, .env.production, etc.
+    ".git",           # .git/ directory
+    ".ssh",           # SSH keys
+    ".pem",           # Certificates
+    ".key",           # Private keys
+    ".secret",        # Secret files
+    "credentials",    # Credentials files
+    "__pycache__",    # Python cache
+    ".venv",          # Python venv
+    "venv",           # Python venv
+    "node_modules",   # Node modules
+    ".claude",        # Claude config
+]
+
+
+def is_sensitive_path(path: Path, base: Path) -> bool:
+    """Check if path contains sensitive patterns."""
+    try:
+        relative = path.relative_to(base)
+        parts = relative.parts
+        name = path.name.lower()
+
+        for pattern in BLOCKED_PATTERNS:
+            # Check if any path component starts with pattern
+            for part in parts:
+                if part.lower().startswith(pattern):
+                    return True
+            # Also check the filename itself
+            if name.startswith(pattern):
+                return True
+
+        return False
+    except ValueError:
+        return True  # If can't get relative path, treat as sensitive
+
+
 def safe_path(base: Path, requested: str) -> Path | None:
     """
     Resolve path and ensure it's within base directory.
-    Returns None if path is unsafe.
+    Returns None if path is unsafe or sensitive.
     """
     try:
         base = base.resolve()
@@ -99,6 +137,10 @@ def safe_path(base: Path, requested: str) -> Path | None:
             target = full_path.resolve()
             if not target.is_relative_to(base):
                 return None
+
+        # Block sensitive files
+        if is_sensitive_path(full_path, base):
+            return None
 
         return full_path
     except Exception:
