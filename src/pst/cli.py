@@ -23,7 +23,7 @@ from datetime import datetime, UTC
 from pathlib import Path
 
 from . import storage
-from .utils import generate_page_id, generate_password, hash_password, detect_ip
+from .utils import generate_page_id, generate_password, hash_password, detect_ip, load_manifest, MANIFEST_FILE
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -140,6 +140,17 @@ def cmd_add(args: argparse.Namespace) -> int:
     if not source.exists():
         print(f"Error: {args.path} not found", file=sys.stderr)
         return 1
+
+    # Directory requires manifest
+    if source.is_dir():
+        manifest = load_manifest(source)
+        if manifest is None:
+            print(f"Error: Directory requires {MANIFEST_FILE} manifest", file=sys.stderr)
+            print(f"Create {source / MANIFEST_FILE} with allowed file patterns:", file=sys.stderr)
+            print("  index.html", file=sys.stderr)
+            print("  assets/**", file=sys.stderr)
+            return 1
+        print(f"Using manifest: {', '.join(manifest)}")
 
     page_id = generate_page_id()
 

@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Flask, request, make_response, send_file, Response
 
 from .storage import get_page, load_pages
-from .utils import verify_password, safe_path
+from .utils import verify_password, safe_path, load_manifest
 
 
 app = Flask(__name__)
@@ -85,10 +85,12 @@ def serve_page(page_id: str, filepath: str) -> Response:
         # Directory: serve requested file or index.html
         if not filepath:
             filepath = "index.html"
-        target = safe_path(source, filepath)
+        # Load manifest for directory
+        manifest = load_manifest(source)
+        target = safe_path(source, filepath, manifest)
     else:
-        # Single file: ignore filepath
-        target = source if source.exists() else None
+        # Single file: ignore filepath, no manifest needed
+        target = safe_path(source.parent, source.name) if source.exists() else None
 
     if not target or not target.exists():
         return make_response("Not found", 404)

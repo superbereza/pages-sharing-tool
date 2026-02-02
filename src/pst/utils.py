@@ -1,5 +1,6 @@
 """Utility functions for pst."""
 
+import fnmatch
 import hashlib
 import secrets
 import socket
@@ -80,48 +81,54 @@ def detect_ip(host_override: str | None = None) -> str:
     return get_local_ip()
 
 
-# Sensitive file patterns that should never be served
-BLOCKED_PATTERNS = [
-    ".env",           # .env, .env.local, .env.production, etc.
-    ".git",           # .git/ directory
-    ".ssh",           # SSH keys
-    ".pem",           # Certificates
-    ".key",           # Private keys
-    ".secret",        # Secret files
-    "credentials",    # Credentials files
-    "__pycache__",    # Python cache
-    ".venv",          # Python venv
-    "venv",           # Python venv
-    "node_modules",   # Node modules
-    ".claude",        # Claude config
-]
+MANIFEST_FILE = ".pst-publish"
 
 
-def is_sensitive_path(path: Path, base: Path) -> bool:
-    """Check if path contains sensitive patterns."""
-    try:
-        relative = path.relative_to(base)
-        parts = relative.parts
-        name = path.name.lower()
-
-        for pattern in BLOCKED_PATTERNS:
-            # Check if any path component starts with pattern
-            for part in parts:
-                if part.lower().startswith(pattern):
-                    return True
-            # Also check the filename itself
-            if name.startswith(pattern):
-                return True
-
+def is_env_file(name: str) -> bool:
+    """Check if filename is a .env file (but allow .env.example)."""
+    name = name.lower()
+    if name == ".env.example":
         return False
-    except ValueError:
-        return True  # If can't get relative path, treat as sensitive
+    if name == ".env" or name.startswith(".env."):
+        return True
+    return False
 
 
-def safe_path(base: Path, requested: str) -> Path | None:
+def load_manifest(directory: Path) -> list[str] | None:
+    """Load manifest patterns from .pst-publish file."""
+    manifest_path = directory / MANIFEST_FILE
+    if not manifest_path.exists():
+        return None
+    try:
+        lines = manifest_path.read_text().strip().split("\n")
+        # Filter empty lines and comments
+        return [line.strip() for line in lines if line.strip() and not line.strip().startswith("#")]
+    except Exception:
+        return None
+
+
+def matches_manifest(relative_path: str, patterns: list[str]) -> bool:
+    """Check if relative path matches any manifest pattern."""
+    for pattern in patterns:
+        # Handle ** for recursive matching
+        if "**" in pattern:
+            # Convert ** to match any path segments
+            # e.g., "assets/**" matches "assets/css/main.css"
+            prefix = pattern.split("**")[0].rstrip("/")
+            if relative_path.startswith(prefix + "/") or relative_path == prefix:
+                return True
+        elif fnmatch.fnmatch(relative_path, pattern):
+            return True
+        # Also check if pattern matches a parent directory
+        elif relative_path.startswith(pattern.rstrip("/") + "/"):
+            return True
+    return False
+
+
+def safe_path(base: Path, requested: str, manifest: list[str] | None = None) -> Path | None:
     """
-    Resolve path and ensure it's within base directory.
-    Returns None if path is unsafe or sensitive.
+    Resolve path and ensure it's within base directory and allowed by manifest.
+    Returns None if path is unsafe.
     """
     try:
         base = base.resolve()
@@ -138,9 +145,15 @@ def safe_path(base: Path, requested: str) -> Path | None:
             if not target.is_relative_to(base):
                 return None
 
-        # Block sensitive files
-        if is_sensitive_path(full_path, base):
+        # Always block .env files (except .env.example)
+        if is_env_file(full_path.name):
             return None
+
+        # Check manifest if provided
+        if manifest is not None:
+            relative = str(full_path.relative_to(base))
+            if not matches_manifest(relative, manifest):
+                return None
 
         return full_path
     except Exception:
