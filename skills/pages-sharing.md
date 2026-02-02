@@ -49,10 +49,19 @@ pst stop
 
 ## Flags for `pst add`
 
-- `--desc "text"` / `-d "text"` — description (saved in config)
+- `--name "slug"` / `-n "slug"` — human-readable name in URL
+- `--desc "text"` / `-d "text"` — description for listing
 - `--password` / `-p` — protect with auto-generated password
 - `--password <pass>` — protect with custom password
 - (no flags) — public access
+
+**URL format:** `http://host:port/p/<secret>/<name>/`
+
+Example:
+```bash
+pst add ./dist/ --name my-feature --desc "Feature prototype"
+# → http://94.131.101.149:8080/p/a8k2m9x4p1n7q3w5/my-feature/
+```
 
 ## Flags for `pst start`
 
