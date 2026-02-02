@@ -117,6 +117,8 @@ Add ALL referenced directories to manifest (assets/, config/, js/, etc.)
 
 **Security:** `.env` files are always blocked, even if in manifest (except `.env.example`).
 
+**API calls won't work** — pst is a file server only. If HTML uses `fetch('/api/...')`, either embed mock data or use the actual backend server.
+
 **Single files** work without manifest:
 ```bash
 pst add ./report.html  # OK, no manifest needed
