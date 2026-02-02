@@ -109,6 +109,12 @@ pst add ./project/ --desc "My project"
 - `assets/**` — directory and all contents
 - `*.html` — glob pattern
 
+**Before creating manifest, check what HTML loads:**
+```bash
+grep -E "src=|href=" index.html | grep -oE '\./[^"'"'"']*' | sort -u
+```
+Add ALL referenced directories to manifest (assets/, config/, js/, etc.)
+
 **Security:** `.env` files are always blocked, even if in manifest (except `.env.example`).
 
 **Single files** work without manifest:
