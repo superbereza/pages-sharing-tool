@@ -118,6 +118,7 @@ pst add ./report.html  # OK, no manifest needed
 
 ## Tips
 
+- **Always `cd` to project first, then `pst add .`** — don't use absolute paths, so `pst list` works correctly
 - `pst list` filters by current directory — use in project folder to see only that project's pages
 - Server auto-detects external IP for shareable URLs
 - Page IDs support partial matching: `pst remove abc` works for `abc123`
