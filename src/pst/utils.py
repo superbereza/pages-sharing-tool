@@ -9,8 +9,8 @@ import subprocess
 from pathlib import Path
 
 
-def generate_page_id(length: int = 6) -> str:
-    """Generate random page ID."""
+def generate_page_id(length: int = 16) -> str:
+    """Generate cryptographically secure random page ID."""
     alphabet = string.ascii_lowercase + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(length))
 

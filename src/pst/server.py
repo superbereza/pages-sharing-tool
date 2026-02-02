@@ -81,6 +81,13 @@ def serve_page(page_id: str, filepath: str) -> Response:
     # Resolve file path
     source = Path(page["source"])
 
+    # Strip name prefix from filepath if present
+    page_name = page.get("name", "")
+    if page_name and filepath.startswith(page_name + "/"):
+        filepath = filepath[len(page_name) + 1:]
+    elif page_name and filepath == page_name:
+        filepath = ""
+
     if page["is_dir"]:
         # Directory: serve requested file or index.html
         if not filepath:

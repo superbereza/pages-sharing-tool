@@ -162,12 +162,16 @@ def cmd_add(args: argparse.Namespace) -> int:
         password = None
         password_hash = ""
 
-    storage.add_page(page_id, source, password_hash, args.desc or "")
+    name = args.name or ""
+    storage.add_page(page_id, source, password_hash, args.desc or "", name)
 
     # Get URL
     port = storage.load_port() or 8080
     host = storage.load_host() or detect_ip()
-    url = f"http://{host}:{port}/p/{page_id}/"
+    if name:
+        url = f"http://{host}:{port}/p/{page_id}/{name}/"
+    else:
+        url = f"http://{host}:{port}/p/{page_id}/"
 
     print(f"Published: {url}")
     if password:
@@ -206,7 +210,11 @@ def cmd_list(args: argparse.Namespace) -> int:
         return 0
 
     for page_id, info in pages.items():
-        url = f"http://{host}:{port}/p/{page_id}/"
+        name = info.get("name", "")
+        if name:
+            url = f"http://{host}:{port}/p/{page_id}/{name}/"
+        else:
+            url = f"http://{host}:{port}/p/{page_id}/"
         lock = "" if info["password_hash"] else " (public)"
         desc = info.get("description", "")
         print(f"{url}{lock}")
@@ -252,9 +260,10 @@ def main() -> None:
     # add
     p_add = subparsers.add_parser("add", help="Publish a file or folder")
     p_add.add_argument("path", help="File or folder to publish")
+    p_add.add_argument("--name", "-n", help="Human-readable name for URL (slug)")
     p_add.add_argument("--password", "-p", nargs="?", const=True, default=None,
                        help="Protect with password (auto-generate if no value given)")
-    p_add.add_argument("--desc", "-d", help="Description for this page")
+    p_add.add_argument("--desc", "-d", help="Description for listing")
     p_add.set_defaults(func=cmd_add)
 
     # list

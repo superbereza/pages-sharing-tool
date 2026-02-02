@@ -12,6 +12,7 @@ class PageInfo(TypedDict):
     password_hash: str  # Empty string if no password
     created_at: str
     description: str  # Optional description
+    name: str  # URL slug (human-readable name)
 
 
 PST_DIR = Path.home() / ".pst"
@@ -42,7 +43,7 @@ def save_pages(pages: dict[str, PageInfo]) -> None:
     PAGES_FILE.write_text(json.dumps(pages, indent=2))
 
 
-def add_page(page_id: str, source: Path, password_hash: str, description: str = "") -> None:
+def add_page(page_id: str, source: Path, password_hash: str, description: str = "", name: str = "") -> None:
     """Add a page to registry."""
     pages = load_pages()
     pages[page_id] = {
@@ -51,6 +52,7 @@ def add_page(page_id: str, source: Path, password_hash: str, description: str = 
         "password_hash": password_hash,
         "created_at": datetime.now(UTC).isoformat(),
         "description": description,
+        "name": name,
     }
     save_pages(pages)
 
