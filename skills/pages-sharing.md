@@ -78,19 +78,34 @@ pst add ./dist/ --desc "Build output"
 pst start --port 9000
 ```
 
-## Important: HTML with Assets
+## Publishing Directories (Manifest Required)
 
-If your HTML references relative paths (`./assets/`, `./css/`, `./js/`), **publish the directory, not the file**:
+To publish a directory, create `.pst-publish` manifest first:
 
 ```bash
-# ❌ Wrong — CSS/JS won't load
-pst add ./index.html
+# 1. Create manifest with allowed patterns
+cat > ./project/.pst-publish << 'EOF'
+index.html
+assets/**
+EOF
 
-# ✅ Correct — serves index.html with all assets
-pst add ./project-folder/
+# 2. Now publish works
+pst add ./project/ --desc "My project"
 ```
 
-Single HTML files only work for standalone pages with inline styles or external CDN links.
+**Why manifest?** Prevents accidental exposure of `.env`, config files, etc. Only files matching manifest patterns are served.
+
+**Manifest syntax:**
+- `index.html` — exact file
+- `assets/**` — directory and all contents
+- `*.html` — glob pattern
+
+**Security:** `.env` files are always blocked, even if in manifest (except `.env.example`).
+
+**Single files** work without manifest:
+```bash
+pst add ./report.html  # OK, no manifest needed
+```
 
 ## Tips
 
