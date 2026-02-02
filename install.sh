@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pages Sharing Tool - Install Script
+# Agent Instant Drop - Install Script
 # Creates isolated venv and installs skill
 
 set -e
@@ -9,9 +9,9 @@ VENV_DIR="$SCRIPT_DIR/.venv"
 LOCAL_BIN="$HOME/.local/bin"
 
 # Default skills location - user home directory
-SKILLS_ROOT="${PST_SKILLS_ROOT:-$HOME}"
+SKILLS_ROOT="${DROP_SKILLS_ROOT:-$HOME}"
 
-echo "📄 Installing Pages Sharing Tool..."
+echo "Installing Agent Instant Drop..."
 
 # Create venv
 echo "Creating venv in $VENV_DIR..."
@@ -25,30 +25,30 @@ echo "Installing package..."
 # Create ~/.local/bin if needed
 mkdir -p "$LOCAL_BIN"
 
-# Symlink pst command
+# Symlink drop command
 echo "Creating command symlink in $LOCAL_BIN..."
-ln -sf "$VENV_DIR/bin/pst" "$LOCAL_BIN/pst"
-echo "  ✓ pst"
+ln -sf "$VENV_DIR/bin/drop" "$LOCAL_BIN/drop"
+echo "  ✓ drop"
 
 # Create skill in .claude/skills/ structure
-SKILL_DIR="$SKILLS_ROOT/.claude/skills/pages-sharing"
+SKILL_DIR="$SKILLS_ROOT/.claude/skills/drop"
 mkdir -p "$SKILL_DIR"
 
 echo "Creating skill in $SKILL_DIR..."
-ln -sf "$SCRIPT_DIR/skills/pages-sharing.md" "$SKILL_DIR/SKILL.md"
-echo "  ✓ pages-sharing"
+ln -sf "$SCRIPT_DIR/skills/drop.md" "$SKILL_DIR/SKILL.md"
+echo "  ✓ drop"
 
 echo ""
-echo "📄 Pages Sharing Tool installed!"
+echo "Agent Instant Drop installed!"
 echo ""
 echo "Usage:"
-echo "  pst start              # Start server"
-echo "  pst add ./file.html    # Publish file"
-echo "  pst stop               # Stop server"
+echo "  drop start              # Start server"
+echo "  drop add ./file.html    # Publish file"
+echo "  drop stop               # Stop server"
 echo ""
 echo "Skill available for all projects under: $SKILLS_ROOT"
 echo ""
-echo "To change skill location, set PST_SKILLS_ROOT before install:"
-echo "  PST_SKILLS_ROOT=/path/to/projects ./install.sh"
+echo "To change skill location, set DROP_SKILLS_ROOT before install:"
+echo "  DROP_SKILLS_ROOT=/path/to/projects ./install.sh"
 echo ""
 echo "To uninstall: ./uninstall.sh"

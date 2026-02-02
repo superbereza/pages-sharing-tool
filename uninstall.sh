@@ -1,36 +1,49 @@
 #!/bin/bash
-# Pages Sharing Tool - Uninstall Script
+# Agent Instant Drop - Uninstall Script
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 LOCAL_BIN="$HOME/.local/bin"
-SKILLS_ROOT="${PST_SKILLS_ROOT:-$HOME}"
+SKILLS_ROOT="${DROP_SKILLS_ROOT:-$HOME}"
 
-echo "📄 Uninstalling Pages Sharing Tool..."
+echo "Uninstalling Agent Instant Drop..."
 
 # Stop server if running
-if [ -f "$HOME/.pst/server.pid" ]; then
-    pid=$(cat "$HOME/.pst/server.pid")
+if [ -f "$HOME/.drop/server.pid" ]; then
+    pid=$(cat "$HOME/.drop/server.pid")
     if kill -0 "$pid" 2>/dev/null; then
         echo "Stopping server..."
         kill "$pid" 2>/dev/null || true
     fi
-    rm -f "$HOME/.pst/server.pid"
+    rm -f "$HOME/.drop/server.pid"
 fi
 
 # Remove command symlink
+if [ -L "$LOCAL_BIN/drop" ]; then
+    rm "$LOCAL_BIN/drop"
+    echo "  ✓ Removed drop command"
+fi
+
+# Remove old pst symlink if exists
 if [ -L "$LOCAL_BIN/pst" ]; then
     rm "$LOCAL_BIN/pst"
-    echo "  ✓ Removed pst command"
+    echo "  ✓ Removed old pst command"
 fi
 
 # Remove skill
-SKILL_DIR="$SKILLS_ROOT/.claude/skills/pages-sharing"
+SKILL_DIR="$SKILLS_ROOT/.claude/skills/drop"
 if [ -d "$SKILL_DIR" ]; then
     rm -rf "$SKILL_DIR"
-    echo "  ✓ Removed pages-sharing skill"
+    echo "  ✓ Removed drop skill"
+fi
+
+# Remove old pages-sharing skill if exists
+OLD_SKILL_DIR="$SKILLS_ROOT/.claude/skills/pages-sharing"
+if [ -d "$OLD_SKILL_DIR" ]; then
+    rm -rf "$OLD_SKILL_DIR"
+    echo "  ✓ Removed old pages-sharing skill"
 fi
 
 # Also remove from old location (~/.claude/commands/) if exists
@@ -46,7 +59,7 @@ if [ -d "$VENV_DIR" ]; then
 fi
 
 echo ""
-echo "📄 Pages Sharing Tool uninstalled!"
+echo "Agent Instant Drop uninstalled!"
 echo ""
-echo "Note: ~/.pst/ directory preserved (contains your pages config)"
-echo "To remove completely: rm -rf ~/.pst"
+echo "Note: ~/.drop/ directory preserved (contains your pages config)"
+echo "To remove completely: rm -rf ~/.drop"

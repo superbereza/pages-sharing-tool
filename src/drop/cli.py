@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-pst - Pages Sharing Tool
+drop - Agent Instant Drop
 
-Securely publish static pages with password protection.
+Drop any file, app, or prototype to your human.
 
 Examples:
-    pst start                    # Start server
-    pst add ./report.html        # Publish file
-    pst add ./dist/              # Publish folder
-    pst list                     # List pages
-    pst remove abc123            # Remove page
-    pst stop                     # Stop server
+    drop start                    # Start server
+    drop add ./report.html        # Publish file
+    drop add ./dist/              # Publish folder
+    drop list                     # List pages
+    drop remove abc123            # Remove page
+    drop stop                     # Stop server
 """
 
 import argparse
@@ -51,7 +51,7 @@ def cmd_start(args: argparse.Namespace) -> int:
     # Start server in background
     cmd = [
         sys.executable, "-c",
-        f"from pst.server import run_server; run_server(port={port})"
+        f"from drop.server import run_server; run_server(port={port})"
     ]
 
     proc = subprocess.Popen(
@@ -206,7 +206,7 @@ def cmd_list(args: argparse.Namespace) -> int:
 
     if not pages:
         print(f"No pages from {cwd}")
-        print("Use 'pst list --all' to see all pages")
+        print("Use 'drop list --all' to see all pages")
         return 0
 
     for page_id, info in pages.items():
@@ -237,7 +237,7 @@ def cmd_remove(args: argparse.Namespace) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Securely publish static pages with password protection",
+        description="Drop any file, app, or prototype to your human",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )

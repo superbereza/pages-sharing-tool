@@ -1,53 +1,53 @@
 ---
-name: pages-sharing
-description: Publish static pages via pst CLI with optional password protection
+name: drop
+description: Drop files, apps, or prototypes to your human via drop CLI
 ---
 
-# Pages Sharing Tool
+# Agent Instant Drop
 
-Publish static HTML pages with optional password protection.
+Drop any file, app, or prototype to your human.
 
 ## Quick Start
 
 ```bash
 # Start server (once)
-pst start
+drop start
 
 # Publish a page (public by default)
-pst add ./report.html --desc "Weekly report"
+drop add ./report.html --desc "Weekly report"
 # → http://192.168.1.50:8080/p/abc123
 
 # Publish with password
-pst add ./secret.html --password --desc "Confidential"
+drop add ./secret.html --password --desc "Confidential"
 # → http://192.168.1.50:8080/p/def456
 # → Password: xK9mP2
 
 # List pages from current directory
-pst list
+drop list
 
 # List all pages
-pst list --all
+drop list --all
 
 # Remove when done
-pst remove abc123
+drop remove abc123
 
 # Stop server
-pst stop
+drop stop
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `pst start [--port N]` | Start server (default: 8080) |
-| `pst stop` | Stop server |
-| `pst status` | Show server URL and all pages |
-| `pst add <path>` | Publish file/folder (public by default) |
-| `pst list` | List pages from current directory |
-| `pst list --all` | List all pages |
-| `pst remove <id>` | Remove published page |
+| `drop start [--port N]` | Start server (default: 8080) |
+| `drop stop` | Stop server |
+| `drop status` | Show server URL and all pages |
+| `drop add <path>` | Publish file/folder (public by default) |
+| `drop list` | List pages from current directory |
+| `drop list --all` | List all pages |
+| `drop remove <id>` | Remove published page |
 
-## Flags for `pst add`
+## Flags for `drop add`
 
 - `--name "slug"` / `-n "slug"` — human-readable name in URL
 - `--desc "text"` / `-d "text"` — description for listing
@@ -59,11 +59,11 @@ pst stop
 
 Example:
 ```bash
-pst add ./dist/ --name my-feature --desc "Feature prototype"
+drop add ./dist/ --name my-feature --desc "Feature prototype"
 # → http://94.131.101.149:8080/p/a8k2m9x4p1n7q3w5/my-feature/
 ```
 
-## Flags for `pst start`
+## Flags for `drop start`
 
 - `--port <N>` — server port (default: 8080)
 - `--host <ip>` — override detected IP
@@ -72,34 +72,34 @@ pst add ./dist/ --name my-feature --desc "Feature prototype"
 
 ```bash
 # Public page with description
-pst add ./report.html --desc "Q1 Report"
+drop add ./report.html --desc "Q1 Report"
 
 # Auto-generated password
-pst add ./secret.html --password --desc "Internal docs"
+drop add ./secret.html --password --desc "Internal docs"
 
 # Custom password
-pst add ./secret.html --password mysecret
+drop add ./secret.html --password mysecret
 
 # Publish folder (serves index.html)
-pst add ./dist/ --desc "Build output"
+drop add ./dist/ --desc "Build output"
 
 # Start on different port
-pst start --port 9000
+drop start --port 9000
 ```
 
 ## Publishing Directories (Manifest Required)
 
-To publish a directory, create `.pst-publish` manifest first:
+To publish a directory, create `.drop-publish` manifest first:
 
 ```bash
 # 1. Create manifest with allowed patterns
-cat > ./project/.pst-publish << 'EOF'
+cat > ./project/.drop-publish << 'EOF'
 index.html
 assets/**
 EOF
 
 # 2. Now publish works
-pst add ./project/ --desc "My project"
+drop add ./project/ --desc "My project"
 ```
 
 **Why manifest?** Prevents accidental exposure of `.env`, config files, etc. Only files matching manifest patterns are served.
@@ -117,18 +117,18 @@ Add ALL referenced directories to manifest (assets/, config/, js/, etc.)
 
 **Security:** `.env` files are always blocked, even if in manifest (except `.env.example`).
 
-**API calls won't work** — pst is a file server only. If HTML uses `fetch('/api/...')`, either embed mock data or use the actual backend server.
+**API calls won't work** — drop is a file server only. If HTML uses `fetch('/api/...')`, either embed mock data or use the actual backend server.
 
 **Single files** work without manifest:
 ```bash
-pst add ./report.html  # OK, no manifest needed
+drop add ./report.html  # OK, no manifest needed
 ```
 
 ## Tips
 
-- **Always `cd` to project first, then `pst add .`** — don't use absolute paths, so `pst list` works correctly
-- `pst list` filters by current directory — use in project folder to see only that project's pages
+- **Always `cd` to project first, then `drop add .`** — don't use absolute paths, so `drop list` works correctly
+- `drop list` filters by current directory — use in project folder to see only that project's pages
 - Server auto-detects external IP for shareable URLs
-- Page IDs support partial matching: `pst remove abc` works for `abc123`
+- Page IDs support partial matching: `drop remove abc` works for `abc123`
 - Files are served from original location — updates appear immediately
 - Rate limiting: 3 password attempts per minute per IP

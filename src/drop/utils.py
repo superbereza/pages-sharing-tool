@@ -1,4 +1,4 @@
-"""Utility functions for pst."""
+"""Utility functions for drop."""
 
 import fnmatch
 import hashlib
@@ -81,7 +81,7 @@ def detect_ip(host_override: str | None = None) -> str:
     return get_local_ip()
 
 
-MANIFEST_FILE = ".pst-publish"
+MANIFEST_FILE = ".drop-publish"
 
 
 def is_env_file(name: str) -> bool:
@@ -95,7 +95,7 @@ def is_env_file(name: str) -> bool:
 
 
 def load_manifest(directory: Path) -> list[str] | None:
-    """Load manifest patterns from .pst-publish file."""
+    """Load manifest patterns from .drop-publish file."""
     manifest_path = directory / MANIFEST_FILE
     if not manifest_path.exists():
         return None

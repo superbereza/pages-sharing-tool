@@ -1,4 +1,4 @@
-"""Flask server for pst."""
+"""Flask server for drop."""
 
 import mimetypes
 import time
@@ -72,7 +72,7 @@ def serve_page(page_id: str, filepath: str) -> Response:
         return make_response("Not found", 404)
 
     # Check authentication
-    cookie_name = f"pst_auth_{page_id}"
+    cookie_name = f"drop_auth_{page_id}"
     if page["password_hash"]:
         auth_cookie = request.cookies.get(cookie_name)
         if auth_cookie != page["password_hash"]:
@@ -137,7 +137,7 @@ def auth_page(page_id: str, filepath: str) -> Response:
         response.status_code = 303
         response.headers["Location"] = request.path
         response.set_cookie(
-            f"pst_auth_{page_id}",
+            f"drop_auth_{page_id}",
             page["password_hash"],
             max_age=COOKIE_TTL,
             httponly=True,

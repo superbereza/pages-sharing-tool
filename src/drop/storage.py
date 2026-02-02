@@ -1,4 +1,4 @@
-"""Storage management for pst."""
+"""Storage management for drop."""
 
 import json
 from datetime import datetime, UTC
@@ -15,16 +15,16 @@ class PageInfo(TypedDict):
     name: str  # URL slug (human-readable name)
 
 
-PST_DIR = Path.home() / ".pst"
-PAGES_FILE = PST_DIR / "pages.json"
-PID_FILE = PST_DIR / "server.pid"
-PORT_FILE = PST_DIR / "port"
-HOST_FILE = PST_DIR / "host"
+DROP_DIR = Path.home() / ".drop"
+PAGES_FILE = DROP_DIR / "pages.json"
+PID_FILE = DROP_DIR / "server.pid"
+PORT_FILE = DROP_DIR / "port"
+HOST_FILE = DROP_DIR / "host"
 
 
 def ensure_dir() -> None:
-    """Ensure ~/.pst directory exists."""
-    PST_DIR.mkdir(parents=True, exist_ok=True)
+    """Ensure ~/.drop directory exists."""
+    DROP_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_pages() -> dict[str, PageInfo]:

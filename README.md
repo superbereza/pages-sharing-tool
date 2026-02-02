@@ -1,71 +1,39 @@
-# Pages Sharing Tool
+# Agent Instant Drop
 
-Securely publish static pages with password protection. Built for AI agents.
-
-## Why?
-
-Running `python -m http.server` exposes your entire directory. This tool:
-- Publishes only specific files/folders
-- Password-protects each publication
-- Returns ready-to-share URLs with your server's IP
-- Prevents directory traversal attacks
+Drop any file, app, or prototype to your human.
 
 ## Install
 
 ```bash
-git clone https://github.com/superbereza/pages-sharing-tool
-cd pages-sharing-tool
+git clone https://github.com/superbereza/agent-instant-drop
+cd agent-instant-drop
 ./install.sh
 ```
 
-This creates an isolated venv and symlinks `pst` to `~/.local/bin/`.
+Creates isolated venv and symlinks `drop` to `~/.local/bin/`.
 
-To uninstall:
-```bash
-./uninstall.sh
-```
-
-## Usage
+## Quick Start
 
 ```bash
-# Start server
-pst start
-
-# Publish a file
-pst add ./report.html
-# → http://192.168.1.50:8080/p/abc123
-# → Password: xK9mP2
-
-# Publish a folder
-pst add ./dist/
-
-# List published pages
-pst list
-
-# Remove a page
-pst remove abc123
-
-# Stop server
-pst stop
+drop start                    # Start server
+drop add ./report.html        # Publish file → get URL
+drop add ./dist/              # Publish folder
+drop list                     # List pages
+drop remove abc123            # Remove page
+drop stop                     # Stop server
 ```
 
-## For AI Agents
+## Features
 
-Add to your `CLAUDE.md`:
-
-```
-This project uses `pst` for secure page sharing. Run `pst --help` for usage.
-```
-
-Or install the skill from `skills/pages-sharing.md`.
-
-## Security
-
-- Path traversal protection via strict path validation
-- Password hashing with SHA-256
+- Manifest-based security for directories (`.drop-publish`)
+- Optional password protection
+- Human-readable URLs: `/p/<secret>/<name>/`
+- External IP detection for shareable URLs
 - Rate limiting (3 attempts/min/IP)
-- No directory listing
-- Symlink escape prevention
+
+## For Humans
+
+See [docs/README-human.md](docs/README-human.md) for detailed documentation.
 
 ## License
 
