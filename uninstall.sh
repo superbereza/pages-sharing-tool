@@ -6,7 +6,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 LOCAL_BIN="$HOME/.local/bin"
-CLAUDE_COMMANDS="$HOME/.claude/commands"
+DEFAULT_SKILLS_ROOT="$(dirname "$SCRIPT_DIR")"
+SKILLS_ROOT="${PST_SKILLS_ROOT:-$DEFAULT_SKILLS_ROOT}"
 
 echo "📄 Uninstalling Pages Sharing Tool..."
 
@@ -26,16 +27,18 @@ if [ -L "$LOCAL_BIN/pst" ]; then
     echo "  ✓ Removed pst command"
 fi
 
-# Remove skill symlinks
-for skill in "$SCRIPT_DIR/skills/"*.md; do
-    if [ -f "$skill" ]; then
-        name=$(basename "$skill")
-        if [ -L "$CLAUDE_COMMANDS/$name" ]; then
-            rm "$CLAUDE_COMMANDS/$name"
-            echo "  ✓ Removed $name skill"
-        fi
-    fi
-done
+# Remove skill
+SKILL_DIR="$SKILLS_ROOT/.claude/skills/pages-sharing"
+if [ -d "$SKILL_DIR" ]; then
+    rm -rf "$SKILL_DIR"
+    echo "  ✓ Removed pages-sharing skill"
+fi
+
+# Also remove from old location (~/.claude/commands/) if exists
+if [ -L "$HOME/.claude/commands/pages-sharing.md" ]; then
+    rm "$HOME/.claude/commands/pages-sharing.md"
+    echo "  ✓ Removed old command symlink"
+fi
 
 # Remove venv
 if [ -d "$VENV_DIR" ]; then
