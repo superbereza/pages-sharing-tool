@@ -6,8 +6,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 LOCAL_BIN="$HOME/.local/bin"
-DEFAULT_SKILLS_ROOT="$(dirname "$SCRIPT_DIR")"
-SKILLS_ROOT="${PST_SKILLS_ROOT:-$DEFAULT_SKILLS_ROOT}"
+SKILLS_ROOT="${PST_SKILLS_ROOT:-$HOME}"
 
 echo "📄 Uninstalling Pages Sharing Tool..."
 

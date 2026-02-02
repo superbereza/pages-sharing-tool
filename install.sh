@@ -8,9 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 LOCAL_BIN="$HOME/.local/bin"
 
-# Default skills location - parent of script dir (e.g., /home/user/dev/)
-DEFAULT_SKILLS_ROOT="$(dirname "$SCRIPT_DIR")"
-SKILLS_ROOT="${PST_SKILLS_ROOT:-$DEFAULT_SKILLS_ROOT}"
+# Default skills location - user home directory
+SKILLS_ROOT="${PST_SKILLS_ROOT:-$HOME}"
 
 echo "📄 Installing Pages Sharing Tool..."
 
