@@ -166,7 +166,7 @@ def cmd_add(args: argparse.Namespace) -> int:
 
 
 def cmd_list(args: argparse.Namespace) -> int:
-    """List all pages."""
+    """List pages (filtered by current directory by default)."""
     pages = storage.load_pages()
     if not pages:
         print("No pages published")
@@ -174,6 +174,25 @@ def cmd_list(args: argparse.Namespace) -> int:
 
     port = storage.load_port() or 8080
     host = storage.load_host() or detect_ip()
+    cwd = Path.cwd().resolve()
+
+    # Filter by current directory unless --all
+    if not args.all:
+        filtered = {}
+        for page_id, info in pages.items():
+            source = Path(info["source"])
+            try:
+                # Check if source is within cwd or its subdirectories
+                if source.is_relative_to(cwd):
+                    filtered[page_id] = info
+            except (ValueError, OSError):
+                pass
+        pages = filtered
+
+    if not pages:
+        print(f"No pages from {cwd}")
+        print("Use 'pst list --all' to see all pages")
+        return 0
 
     for page_id, info in pages.items():
         url = f"http://{host}:{port}/p/{page_id}/"
@@ -225,6 +244,7 @@ def main() -> None:
 
     # list
     p_list = subparsers.add_parser("list", help="List published pages")
+    p_list.add_argument("--all", "-a", action="store_true", help="Show all pages (not just current directory)")
     p_list.set_defaults(func=cmd_list)
 
     # remove
