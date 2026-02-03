@@ -1,6 +1,7 @@
 """Storage management for drop."""
 
 import json
+import os
 from datetime import datetime, UTC
 from pathlib import Path
 from typing import TypedDict
@@ -13,6 +14,11 @@ class PageInfo(TypedDict):
     created_at: str
     description: str  # Optional description
     name: str  # URL slug (human-readable name)
+    # App-specific fields (optional)
+    type: str  # "static" or "app"
+    run_cmd: str  # Command to run (for apps)
+    port: int  # App port (for apps)
+    pid: int  # Running process PID (for apps, 0 if not running)
 
 
 DROP_DIR = Path.home() / ".drop"
@@ -43,7 +49,16 @@ def save_pages(pages: dict[str, PageInfo]) -> None:
     PAGES_FILE.write_text(json.dumps(pages, indent=2))
 
 
-def add_page(page_id: str, source: Path, password_hash: str, description: str = "", name: str = "") -> None:
+def add_page(
+    page_id: str,
+    source: Path,
+    password_hash: str,
+    description: str = "",
+    name: str = "",
+    page_type: str = "static",
+    run_cmd: str = "",
+    port: int = 0,
+) -> None:
     """Add a page to registry."""
     pages = load_pages()
     pages[page_id] = {
@@ -53,6 +68,10 @@ def add_page(page_id: str, source: Path, password_hash: str, description: str = 
         "created_at": datetime.now(UTC).isoformat(),
         "description": description,
         "name": name,
+        "type": page_type,
+        "run_cmd": run_cmd,
+        "port": port,
+        "pid": 0,
     }
     save_pages(pages)
 
@@ -94,6 +113,34 @@ def get_full_page_id(partial_id: str) -> str | None:
     if len(matches) == 1:
         return matches[0]
     return None
+
+
+def update_page_pid(page_id: str, pid: int) -> bool:
+    """Update running PID for an app. Returns True if found."""
+    pages = load_pages()
+    full_id = get_full_page_id(page_id)
+    if not full_id:
+        return False
+    pages[full_id]["pid"] = pid
+    save_pages(pages)
+    return True
+
+
+def get_app_status(page_id: str) -> str:
+    """Get app status: 'running', 'stopped', or 'crashed'."""
+    page = get_page(page_id)
+    if not page or page.get("type") != "app":
+        return "not_app"
+
+    pid = page.get("pid", 0)
+    if pid == 0:
+        return "stopped"
+
+    try:
+        os.kill(pid, 0)
+        return "running"
+    except OSError:
+        return "crashed"
 
 
 # Server state
