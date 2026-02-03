@@ -77,8 +77,92 @@ def _stop_with_systemd() -> int:
     return 0
 
 
+def cmd_start_app(args: argparse.Namespace) -> int:
+    """Start an app by name/ID."""
+    page = storage.get_page(args.name)
+    if not page:
+        print(f"Error: '{args.name}' not found", file=sys.stderr)
+        return 1
+
+    if page.get("type") != "app":
+        print(f"Error: '{args.name}' is not an app (use 'drop start' for server)", file=sys.stderr)
+        return 1
+
+    # Check if already running
+    status = storage.get_app_status(args.name)
+    if status == "running":
+        host = storage.load_host() or detect_ip()
+        print(f"App already running: http://{host}:{page['port']}/")
+        return 0
+
+    # Start the app
+    source_dir = Path(page["source"]).parent if not Path(page["source"]).is_dir() else Path(page["source"])
+    run_cmd = page["run_cmd"]
+
+    proc = subprocess.Popen(
+        run_cmd,
+        shell=True,
+        cwd=source_dir,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+    # Save PID
+    full_id = storage.get_full_page_id(args.name)
+    storage.update_page_pid(full_id, proc.pid)
+
+    # Wait and verify
+    time.sleep(1)
+    try:
+        os.kill(proc.pid, 0)
+        host = storage.load_host() or detect_ip()
+        print(f"App started: http://{host}:{page['port']}/")
+        return 0
+    except OSError:
+        storage.update_page_pid(full_id, 0)
+        print("Error: App failed to start", file=sys.stderr)
+        return 1
+
+
+def cmd_stop_app(args: argparse.Namespace) -> int:
+    """Stop an app by name/ID."""
+    page = storage.get_page(args.name)
+    if not page:
+        print(f"Error: '{args.name}' not found", file=sys.stderr)
+        return 1
+
+    if page.get("type") != "app":
+        print(f"Error: '{args.name}' is not an app (use 'drop stop' for server)", file=sys.stderr)
+        return 1
+
+    status = storage.get_app_status(args.name)
+    if status != "running":
+        print("App not running")
+        return 0
+
+    pid = page.get("pid", 0)
+    if pid <= 0:
+        print("App was not running")
+    else:
+        try:
+            # Send signal to process group to kill shell and all children
+            os.killpg(pid, signal.SIGTERM)
+            print("App stopped")
+        except OSError:
+            print("App was not running")
+
+    full_id = storage.get_full_page_id(args.name)
+    storage.update_page_pid(full_id, 0)
+    return 0
+
+
 def cmd_start(args: argparse.Namespace) -> int:
-    """Start the server."""
+    """Start the server or an app."""
+    # If name provided, start app instead
+    if hasattr(args, 'name') and args.name:
+        return cmd_start_app(args)
+
     port = args.port
     host = args.host or detect_ip()
 
@@ -138,7 +222,11 @@ def cmd_start(args: argparse.Namespace) -> int:
 
 
 def cmd_stop(args: argparse.Namespace) -> int:
-    """Stop the server."""
+    """Stop the server or an app."""
+    # If name provided, stop app instead
+    if hasattr(args, 'name') and args.name:
+        return cmd_stop_app(args)
+
     if has_systemd():
         result = subprocess.run(
             ["systemctl", "--user", "is-active", "drop.service"],
@@ -359,13 +447,15 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # start
-    p_start = subparsers.add_parser("start", help="Start server")
-    p_start.add_argument("--port", "-p", type=int, default=8080, help="Port (default: 8080)")
+    p_start = subparsers.add_parser("start", help="Start server or app")
+    p_start.add_argument("name", nargs="?", help="App name/ID to start (omit for server)")
+    p_start.add_argument("--port", "-p", type=int, default=8080, help="Server port (default: 8080)")
     p_start.add_argument("--host", help="Override auto-detected IP")
     p_start.set_defaults(func=cmd_start)
 
     # stop
-    p_stop = subparsers.add_parser("stop", help="Stop server")
+    p_stop = subparsers.add_parser("stop", help="Stop server or app")
+    p_stop.add_argument("name", nargs="?", help="App name/ID to stop (omit for server)")
     p_stop.set_defaults(func=cmd_stop)
 
     # status

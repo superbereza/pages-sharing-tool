@@ -93,25 +93,34 @@ def remove_page(page_id: str) -> bool:
 
 
 def get_page(page_id: str) -> PageInfo | None:
-    """Get page by ID (supports partial match)."""
+    """Get page by ID or name (supports partial ID match)."""
     pages = load_pages()
     if page_id in pages:
         return pages[page_id]
-    # Try partial match
+    # Try partial ID match
     matches = [k for k in pages if k.startswith(page_id)]
     if len(matches) == 1:
         return pages[matches[0]]
+    # Try name match
+    for pid, info in pages.items():
+        if info.get("name") == page_id:
+            return info
     return None
 
 
 def get_full_page_id(partial_id: str) -> str | None:
-    """Get full page ID from partial match."""
+    """Get full page ID from partial ID or name match."""
     pages = load_pages()
     if partial_id in pages:
         return partial_id
+    # Try partial ID match
     matches = [k for k in pages if k.startswith(partial_id)]
     if len(matches) == 1:
         return matches[0]
+    # Try name match
+    for pid, info in pages.items():
+        if info.get("name") == partial_id:
+            return pid
     return None
 
 
