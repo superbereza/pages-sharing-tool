@@ -20,6 +20,24 @@ if [ -f "$HOME/.drop/server.pid" ]; then
     rm -f "$HOME/.drop/server.pid"
 fi
 
+# Stop and disable systemd service (Linux only)
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if systemctl --user is-active drop.service &>/dev/null; then
+        echo "Stopping systemd service..."
+        systemctl --user stop drop.service
+    fi
+    if systemctl --user is-enabled drop.service &>/dev/null; then
+        echo "Disabling systemd service..."
+        systemctl --user disable drop.service
+    fi
+    UNIT_FILE="$HOME/.config/systemd/user/drop.service"
+    if [[ -f "$UNIT_FILE" ]]; then
+        echo "Removing systemd unit..."
+        rm "$UNIT_FILE"
+        systemctl --user daemon-reload
+    fi
+fi
+
 # Remove command symlink
 if [ -L "$LOCAL_BIN/drop" ]; then
     rm "$LOCAL_BIN/drop"
