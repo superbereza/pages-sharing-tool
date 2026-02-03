@@ -390,7 +390,7 @@ def cmd_list(args: argparse.Namespace) -> int:
         print("No pages published")
         return 0
 
-    port = storage.load_port() or 8080
+    server_port = storage.load_port() or 8080
     host = storage.load_host() or detect_ip()
     cwd = Path.cwd().resolve()
 
@@ -400,7 +400,6 @@ def cmd_list(args: argparse.Namespace) -> int:
         for page_id, info in pages.items():
             source = Path(info["source"])
             try:
-                # Check if source is within cwd or its subdirectories
                 if source.is_relative_to(cwd):
                     filtered[page_id] = info
             except (ValueError, OSError):
@@ -413,17 +412,38 @@ def cmd_list(args: argparse.Namespace) -> int:
         return 0
 
     for page_id, info in pages.items():
+        page_type = info.get("type", "static")
         name = info.get("name", "")
-        if name:
-            url = f"http://{host}:{port}/p/{page_id}/{name}/"
+
+        if page_type == "app":
+            # App: show direct port URL
+            port = info.get("port", 0)
+            url = f"http://{host}:{port}/"
+            status = storage.get_app_status(page_id)
+            status_str = f" [{status}]"
         else:
-            url = f"http://{host}:{port}/p/{page_id}/"
+            # Static: show drop server URL
+            if name:
+                url = f"http://{host}:{server_port}/p/{page_id}/{name}/"
+            else:
+                url = f"http://{host}:{server_port}/p/{page_id}/"
+            status_str = ""
+
         lock = "" if info["password_hash"] else " (public)"
+
+        # Check source exists
+        source_exists = Path(info["source"]).exists()
+        source_warning = " ⚠️ source deleted" if not source_exists else ""
+
+        type_label = f"[{page_type}]" if page_type == "app" else ""
+        print(f"{page_id[:8]}  {type_label}{status_str}  {url}{lock}{source_warning}")
+
         desc = info.get("description", "")
-        print(f"{url}{lock}")
         if desc:
             print(f"  {desc}")
         print(f"  Source: {info['source']}")
+        if page_type == "app":
+            print(f"  Run: {info.get('run_cmd', '')}")
 
     return 0
 
