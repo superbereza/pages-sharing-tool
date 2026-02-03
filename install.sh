@@ -38,6 +38,31 @@ echo "Creating skill in $SKILL_DIR..."
 ln -sf "$SCRIPT_DIR/skills/drop.md" "$SKILL_DIR/SKILL.md"
 echo "  ✓ drop"
 
+# Systemd integration (Linux only)
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    SYSTEMD_DIR="$HOME/.config/systemd/user"
+    mkdir -p "$SYSTEMD_DIR"
+
+    cat > "$SYSTEMD_DIR/drop.service" << EOF
+[Unit]
+Description=Agent Instant Drop
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$VENV_DIR/bin/python -c "from drop.server import run_server; run_server()"
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
+EOF
+
+    echo "  ✓ systemd unit created"
+    systemctl --user daemon-reload
+fi
+
 echo ""
 echo "Agent Instant Drop installed!"
 echo ""
