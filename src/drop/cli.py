@@ -458,6 +458,39 @@ def cmd_remove(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_cleanup(args: argparse.Namespace) -> int:
+    """Remove entries with deleted source files."""
+    pages = storage.load_pages()
+    if not pages:
+        print("No pages to clean")
+        return 0
+
+    removed = []
+    for page_id, info in list(pages.items()):
+        source = Path(info["source"])
+        if not source.exists():
+            # Stop app if running
+            if info.get("type") == "app":
+                pid = info.get("pid", 0)
+                if pid > 0:
+                    try:
+                        os.killpg(pid, signal.SIGTERM)
+                    except OSError:
+                        pass
+            removed.append(page_id)
+            del pages[page_id]
+
+    if removed:
+        storage.save_pages(pages)
+        for page_id in removed:
+            print(f"Removed: {page_id} (source deleted)")
+        print(f"Cleaned {len(removed)} stale entries")
+    else:
+        print("No stale entries found")
+
+    return 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Drop any file, app, or prototype to your human",
@@ -502,6 +535,10 @@ def main() -> None:
     p_remove = subparsers.add_parser("remove", help="Remove a page")
     p_remove.add_argument("id", help="Page ID (or prefix)")
     p_remove.set_defaults(func=cmd_remove)
+
+    # cleanup
+    p_cleanup = subparsers.add_parser("cleanup", help="Remove entries with deleted sources")
+    p_cleanup.set_defaults(func=cmd_cleanup)
 
     args = parser.parse_args()
     sys.exit(args.func(args))
