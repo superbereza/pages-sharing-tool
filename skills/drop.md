@@ -43,6 +43,10 @@ drop stop
 | `drop stop` | Stop server |
 | `drop status` | Show server URL and all pages |
 | `drop add <path>` | Publish file/folder (public by default) |
+| `drop add <path> --run "cmd" --port N` | Register an app |
+| `drop start <name>` | Start a registered app |
+| `drop stop <name>` | Stop a running app |
+| `drop cleanup` | Remove crashed/orphaned apps |
 | `drop list` | List pages from current directory |
 | `drop list --all` | List all pages |
 | `drop remove <id>` | Remove published page |
@@ -53,6 +57,8 @@ drop stop
 - `--desc "text"` / `-d "text"` — description for listing
 - `--password` / `-p` — protect with auto-generated password
 - `--password <pass>` — protect with custom password
+- `--run "command"` / `-r "command"` — run command for apps
+- `--port <N>` — app port to proxy (required with --run)
 - (no flags) — public access
 
 **URL format:** `http://host:port/p/<secret>/<name>/`
@@ -86,6 +92,45 @@ drop add ./dist/ --desc "Build output"
 # Start on different port
 drop start --port 9000
 ```
+
+## Apps
+
+Run and expose applications with automatic port management:
+
+```bash
+# Add an app with run command and port
+drop add ./app.py --run "flask run --port 5000" --port 5000 --name api
+# → http://192.168.1.50:8080/p/abc123/api/
+# → App registered (stopped)
+
+# Start the app
+drop start api
+# → Starting api...
+# → http://192.168.1.50:8080/p/abc123/api/ [running]
+
+# Stop the app
+drop stop api
+# → Stopped api
+
+# List shows app status
+drop list
+# api [app] [running] http://192.168.1.50:8080/p/abc123/api/
+# report [page] http://192.168.1.50:8080/p/def456/report/
+
+# Clean up crashed apps
+drop cleanup
+```
+
+**App lifecycle:**
+- `drop add --run --port` — registers app (stopped state)
+- `drop start <name>` — runs the command, proxies to port
+- `drop stop <name>` — kills the process
+- `drop cleanup` — removes crashed/orphaned apps
+
+**Status indicators:**
+- `[running]` — app process is active
+- `[stopped]` — registered but not running
+- `[crashed]` — process exited unexpectedly
 
 ## Publishing Directories (Manifest Required)
 
