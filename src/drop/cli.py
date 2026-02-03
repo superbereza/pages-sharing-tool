@@ -222,14 +222,23 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_add(args: argparse.Namespace) -> int:
-    """Add a page."""
+    """Add a page or app."""
     source = Path(args.path).resolve()
     if not source.exists():
         print(f"Error: {args.path} not found", file=sys.stderr)
         return 1
 
-    # Directory requires manifest
-    if source.is_dir():
+    # Validate app args
+    is_app = bool(args.run)
+    if is_app and not args.port:
+        print("Error: --port is required when using --run", file=sys.stderr)
+        return 1
+    if args.port and not args.run:
+        print("Error: --run is required when using --port", file=sys.stderr)
+        return 1
+
+    # Directory requires manifest (for static only)
+    if source.is_dir() and not is_app:
         manifest = load_manifest(source)
         if manifest is None:
             print(f"Error: Directory requires {MANIFEST_FILE} manifest", file=sys.stderr)
@@ -250,17 +259,36 @@ def cmd_add(args: argparse.Namespace) -> int:
         password_hash = ""
 
     name = args.name or ""
-    storage.add_page(page_id, source, password_hash, args.desc or "", name)
+
+    # Add to storage
+    storage.add_page(
+        page_id,
+        source,
+        password_hash,
+        args.desc or "",
+        name,
+        page_type="app" if is_app else "static",
+        run_cmd=args.run or "",
+        port=args.port or 0,
+    )
 
     # Get URL
-    port = storage.load_port() or 8080
+    server_port = storage.load_port() or 8080
     host = storage.load_host() or detect_ip()
-    if name:
-        url = f"http://{host}:{port}/p/{page_id}/{name}/"
-    else:
-        url = f"http://{host}:{port}/p/{page_id}/"
 
-    print(f"Published: {url}")
+    if is_app:
+        # App URL is direct port access
+        url = f"http://{host}:{args.port}/"
+        print(f"App registered: {url}")
+        print(f"Run 'drop start {page_id}' to start the app")
+    else:
+        # Static URL through drop server
+        if name:
+            url = f"http://{host}:{server_port}/p/{page_id}/{name}/"
+        else:
+            url = f"http://{host}:{server_port}/p/{page_id}/"
+        print(f"Published: {url}")
+
     if password:
         print(f"Password: {password}")
 
@@ -351,6 +379,8 @@ def main() -> None:
     p_add.add_argument("--password", "-p", nargs="?", const=True, default=None,
                        help="Protect with password (auto-generate if no value given)")
     p_add.add_argument("--desc", "-d", help="Description for listing")
+    p_add.add_argument("--run", "-r", help="Command to run (makes this an app)")
+    p_add.add_argument("--port", type=int, help="Port the app listens on (required with --run)")
     p_add.set_defaults(func=cmd_add)
 
     # list
