@@ -15,6 +15,7 @@ Examples:
 
 import argparse
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -23,23 +24,61 @@ from datetime import datetime, UTC
 from pathlib import Path
 
 from . import storage
-from .utils import generate_page_id, generate_password, hash_password, detect_ip, load_manifest, MANIFEST_FILE
+from .utils import generate_page_id, generate_password, hash_password, detect_ip, load_manifest, MANIFEST_FILE, has_systemd
+
+
+def _start_with_systemd(port: int, host: str) -> int:
+    """Start server using systemd."""
+    # Update unit file with current port
+    unit_path = Path.home() / ".config/systemd/user/drop.service"
+    if not unit_path.exists():
+        print("Error: systemd unit not found. Run ./install.sh", file=sys.stderr)
+        return 1
+
+    # Read and update ExecStart with port
+    content = unit_path.read_text()
+    # Replace the run_server() call to include port
+    new_content = re.sub(
+        r'run_server\([^)]*\)',
+        f'run_server(port={port})',
+        content
+    )
+    unit_path.write_text(new_content)
+
+    try:
+        subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+        subprocess.run(["systemctl", "--user", "enable", "drop.service"], check=True)
+        subprocess.run(["systemctl", "--user", "start", "drop.service"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: systemctl command failed: {e}", file=sys.stderr)
+        return 1
+
+    # Wait and verify
+    time.sleep(1)
+    result = subprocess.run(
+        ["systemctl", "--user", "is-active", "drop.service"],
+        capture_output=True,
+        text=True,
+    )
+    if result.stdout.strip() == "active":
+        print(f"Server started: http://{host}:{port}")
+        print("  (systemd managed, auto-restart enabled)")
+        return 0
+    else:
+        print("Error: Server failed to start", file=sys.stderr)
+        return 1
+
+
+def _stop_with_systemd() -> int:
+    """Stop server using systemd."""
+    subprocess.run(["systemctl", "--user", "stop", "drop.service"])
+    subprocess.run(["systemctl", "--user", "disable", "drop.service"])
+    print("Server stopped")
+    return 0
 
 
 def cmd_start(args: argparse.Namespace) -> int:
     """Start the server."""
-    # Check if already running
-    pid = storage.load_pid()
-    if pid:
-        try:
-            os.kill(pid, 0)
-            port = storage.load_port() or 8080
-            host = storage.load_host() or detect_ip()
-            print(f"Server already running: http://{host}:{port}")
-            return 0
-        except OSError:
-            storage.clear_pid()
-
     port = args.port
     host = args.host or detect_ip()
 
@@ -47,6 +86,28 @@ def cmd_start(args: argparse.Namespace) -> int:
     storage.save_port(port)
     if args.host:
         storage.save_host(args.host)
+
+    # Check if already running (systemd or PID)
+    if has_systemd():
+        result = subprocess.run(
+            ["systemctl", "--user", "is-active", "drop.service"],
+            capture_output=True,
+            text=True,
+        )
+        if result.stdout.strip() == "active":
+            print(f"Server already running: http://{host}:{port}")
+            return 0
+        return _start_with_systemd(port, host)
+
+    # Fallback: PID-based management
+    pid = storage.load_pid()
+    if pid:
+        try:
+            os.kill(pid, 0)
+            print(f"Server already running: http://{host}:{port}")
+            return 0
+        except OSError:
+            storage.clear_pid()
 
     # Start server in background
     cmd = [
@@ -68,6 +129,7 @@ def cmd_start(args: argparse.Namespace) -> int:
     try:
         os.kill(proc.pid, 0)
         print(f"Server started: http://{host}:{port}")
+        print("  No systemd - auto-restart disabled")
         return 0
     except OSError:
         print("Error: Server failed to start", file=sys.stderr)
@@ -77,6 +139,18 @@ def cmd_start(args: argparse.Namespace) -> int:
 
 def cmd_stop(args: argparse.Namespace) -> int:
     """Stop the server."""
+    if has_systemd():
+        result = subprocess.run(
+            ["systemctl", "--user", "is-active", "drop.service"],
+            capture_output=True,
+            text=True,
+        )
+        if result.stdout.strip() == "active":
+            return _stop_with_systemd()
+        print("Server not running")
+        return 0
+
+    # Fallback: PID-based
     pid = storage.load_pid()
     if not pid:
         print("Server not running")
@@ -94,20 +168,33 @@ def cmd_stop(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     """Show server status."""
-    pid = storage.load_pid()
     port = storage.load_port() or 8080
     host = storage.load_host() or detect_ip()
 
     running = False
-    if pid:
-        try:
-            os.kill(pid, 0)
+    systemd_managed = False
+
+    if has_systemd():
+        result = subprocess.run(
+            ["systemctl", "--user", "is-active", "drop.service"],
+            capture_output=True,
+            text=True,
+        )
+        if result.stdout.strip() == "active":
             running = True
-        except OSError:
-            storage.clear_pid()
+            systemd_managed = True
+    else:
+        pid = storage.load_pid()
+        if pid:
+            try:
+                os.kill(pid, 0)
+                running = True
+            except OSError:
+                storage.clear_pid()
 
     if running:
-        print(f"Server: http://{host}:{port} (running)")
+        extra = " (systemd)" if systemd_managed else ""
+        print(f"Server: http://{host}:{port} (running{extra})")
     else:
         print("Server: not running")
 
