@@ -2,6 +2,7 @@
 
 import fnmatch
 import hashlib
+import platform
 import secrets
 import socket
 import string
@@ -158,3 +159,19 @@ def safe_path(base: Path, requested: str, manifest: list[str] | None = None) -> 
         return full_path
     except Exception:
         return None
+
+
+def has_systemd() -> bool:
+    """Check if systemd is available (Linux with systemd user services)."""
+    if platform.system() != "Linux":
+        return False
+    try:
+        result = subprocess.run(
+            ["systemctl", "--user", "is-system-running"],
+            capture_output=True,
+            timeout=2,
+        )
+        # Returns 0 for running, or other codes but command exists
+        return True
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
